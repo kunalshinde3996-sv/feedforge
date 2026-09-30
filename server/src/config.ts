@@ -16,7 +16,7 @@ const ConfigSchema = z.object({
   NODE_ENV: z.string().default('development'),
   PORT: z.coerce.number().int().positive().default(8080),
   DATA_DIR: z.string().default('./data'),
-  LLM_PROVIDER: z.enum(['anthropic', 'openai', 'gemini']).default('anthropic'),
+  LLM_PROVIDER: z.enum(['anthropic', 'openai', 'gemini']).default('gemini'),
   LLM_MODEL: z.preprocess(emptyToUndefined, z.string().optional()),
   ANTHROPIC_API_KEY: z.preprocess(emptyToUndefined, z.string().optional()),
   OPENAI_API_KEY: z.preprocess(emptyToUndefined, z.string().optional()),
@@ -33,4 +33,6 @@ if (!parsed.success) {
   process.exit(1);
 }
 
-export const config: Config = parsed.data;
+// Relative DATA_DIR is resolved against the repo root so dev (cwd=server/) and prod agree.
+const repoRoot = path.resolve(here, '../..');
+export const config: Config = { ...parsed.data, DATA_DIR: path.resolve(repoRoot, parsed.data.DATA_DIR) };

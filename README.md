@@ -8,11 +8,15 @@ Built for **Qoneqt × CTRL FREAK 2026** by **Team Dravex — MIT ADT University*
 
 ## Problem
 
-_TODO (M2)_: Community feeds like Qoneqt's Global Feed need a steady stream of short vertical videos. Making them by hand is slow and the quality is uneven.
+Community feeds like Qoneqt's Global Feed need a steady stream of short vertical videos. Making them by hand is slow and the quality is uneven. Generating them with AI and no checks is fast, but it produces generic hooks, bloated pacing and occasional unsafe claims.
 
 ## Solution
 
-_TODO (M2)_: FeedForge is an AI pipeline that turns a topic into a publish-ready video plan. A separate critic model checks every plan before it moves on.
+FeedForge turns a topic into a **publish-ready video plan** and **refuses to ship weak or unsafe content**:
+
+1. **Script Engine.** The LLM drafts 3 hook options, picks the strongest, and writes a scene-by-scene plan for a 25–45s vertical video. It includes voiceover, on-screen text, stock-footage queries, a title, a description and hashtags.
+2. **Quality Gate.** A *separate* LLM call acts as a strict critic and scores the plan on hook, clarity, pacing and safety. The pass/fail rules are **enforced in code**. A failing plan is rewritten using the critic's feedback, up to 2 times. An unsafe plan is rejected outright.
+3. Every attempt is stored: the plan, scores, feedback and timestamps. The Quality Gate is fully auditable.
 
 ## Architecture
 
@@ -23,7 +27,32 @@ Input → Script Engine (LLM) → Quality Gate (LLM critic) → Asset Engine →
         └──────────── Phase 1 ────────────┘               └──────────── Phase 2 ────────────┘
 ```
 
-_TODO (M2)_: module breakdown (routes, pipeline/stages, providers, queue, store, schemas).
+```
+POST /api/jobs ─► Pipeline.submit ─► JobStore.create ─► JobQueue.enqueue({stage:'script'})
+                                                                 │
+          ┌──────────────────────────────────────────────────────┘
+          ▼
+   [script] ──► [quality_gate] ──pass──────────► passed   (Phase 2: ─► assets ─► compose ─► publish)
+       ▲              │ ├─safety < 8──────────► rejected
+       │              │ └─attempts exhausted──► failed
+       └── rewrite ◄──┘   (critic feedback fed back, max 2 rewrites)
+
+   Every state change ─► JobStore (JSON file) + JobEvents ─► SSE /api/jobs/:id/events
+```
+
+| Module | Responsibility |
+|---|---|
+| `server/src/routes` | HTTP API: health, jobs, SSE. Zod-validated bodies, `{ error: { code, message } }` errors, rate limit |
+| `server/src/pipeline/runner.ts` | Orchestrates stages, records attempts and timings, applies gate decisions |
+| `server/src/pipeline/stages` | `scriptEngine.ts`, `qualityGate.ts`: one LLM stage each |
+| `server/src/pipeline/gate.ts` | Pure Quality Gate rules (overall, pass, decide) |
+| `server/src/pipeline/llmJson.ts` | JSON extraction + Zod validation + one repair re-ask with the exact Zod errors |
+| `server/src/providers` | `LLMProvider` interface. Gemini is implemented; Anthropic/OpenAI are stubs |
+| `server/src/queue` | `JobQueue` interface + in-process implementation (per-stage retry, exponential backoff) |
+| `server/src/store` | `JobStore` interface + JSON-file implementation (atomic writes) |
+| `server/src/schemas` | Zod schemas and types for plan, review, job |
+
+Each stage is a separate queue task that returns the next task. Phase 2 stages (`assets`, `compose`, `publish`) chain on after `passed` without changing the Phase 1 flow. `JobQueue` maps 1:1 onto BullMQ (retry policy → `attempts` + exponential `backoff`).
 
 ## Phase 1 vs Phase 2
 
@@ -36,11 +65,62 @@ _TODO (M2)_: module breakdown (routes, pipeline/stages, providers, queue, store,
 
 ## JSON contract
 
-_TODO (M2)_
+Script Engine output (validated with Zod in `server/src/schemas/plan.ts`):
+
+```jsonc
+{
+  "topic": "string",
+  "hookOptions": ["string", "string", "string"],   // exactly 3
+  "hook": "string",                                // ≤ 12 words, must be one of hookOptions
+  "title": "string",
+  "description": "string",
+  "hashtags": ["#string"],                         // 3–6, each starts with #
+  "scenes": [{
+    "id": 1,                                       // renumbered 1..n in code
+    "durationSec": 5,                              // 2–8
+    "visualQuery": "string",                       // stock-footage search query
+    "onScreenText": "string",                      // ≤ 8 words
+    "voiceover": "string"
+  }],
+  "totalDurationSec": 32                           // recomputed in code as Σ scene durations, must be 25–45
+}
+```
+
+Quality Gate output (the critic returns `scores` + `feedback`; `overall` and `pass` are computed in code):
+
+```json
+{ "scores": { "hook": 8, "clarity": 8, "pacing": 7, "safety": 10 }, "overall": 8.25, "pass": true, "feedback": "..." }
+```
+
+If the output is invalid JSON or fails the schema, the model is re-asked **once** with the exact Zod errors. If it is still invalid, the job fails with `LLM_OUTPUT_INVALID`.
+
+Full real job outputs: [`examples/`](examples/).
+
+### API
+
+| Method | Path | Description |
+|---|---|---|
+| `POST` | `/api/jobs` | `{ "topic": "3–200 chars" }` → `202 { "jobId" }`. Rate-limited per IP |
+| `GET` | `/api/jobs` | Job summaries, newest first |
+| `GET` | `/api/jobs/:id` | Full job: input, status, current stage, all attempts, final plan, stage timings, error |
+| `GET` | `/api/jobs/:id/events` | SSE: `event: job` (full job) on every update, `event: end` on a terminal status |
+| `GET` | `/api/health` | Liveness + configured provider/model |
+
+All errors use `{ "error": { "code": "...", "message": "..." } }`.
 
 ## Quality Gate rules
 
-_TODO (M2)_
+These are enforced in code (`server/src/pipeline/gate.ts`), not just in the prompt:
+
+- `overall` = the average of the four scores, computed in code. The model's own numbers are ignored.
+- **Pass** only if `overall ≥ 7` **and** `safety ≥ 8`.
+- **Fail (quality)** → the plan is rewritten by the Script Engine with the critic's feedback. There are at most **2 rewrites (3 attempts total)**. If all 3 fail, the status is `failed` (`QUALITY_GATE_EXHAUSTED`).
+- **Fail (safety < 8)** → the job is immediately `rejected` (`SAFETY_REJECTED`). It is never rewritten and never proceeds. A provider-side safety block is also `rejected` (`SAFETY_BLOCKED`).
+- Every attempt is stored with its plan, scores, overall, pass flag, feedback, timestamps, durations, the number of JSON repairs, and `rewrittenFrom`.
+
+Final job status: `passed` | `rejected` | `failed` (with `error.code`).
+
+**Retries vs rewrites:** a *rewrite* is a quality decision. A *retry* is infrastructure: transient provider errors (429/5xx/network) are retried by the queue, 4 runs per stage with 2s → 4s → 8s backoff. Every run is logged in `timings`.
 
 ## Tech stack
 
@@ -52,11 +132,12 @@ _TODO (M2)_
 ## Run locally
 
 ```bash
-cp .env.example .env      # then fill in LLM_PROVIDER, LLM_MODEL and the matching API key
+cp .env.example .env      # then set LLM_MODEL and GEMINI_API_KEY
 npm install
 npm run dev:server        # API on http://localhost:8080
 npm run dev:web           # dashboard on http://localhost:5173 (proxies /api)
-npm test
+npm test                  # Vitest, mocked LLM (no API calls)
+npm run examples -w server   # with the server running: runs 2 real topics → examples/*.json
 ```
 
 ## Deploy
@@ -67,8 +148,8 @@ _TODO (M4)_
 
 | Variable | Required | Default | Description |
 |---|---|---|---|
-| `LLM_PROVIDER` | yes | `anthropic` | `anthropic` \| `openai` \| `gemini` |
-| `LLM_MODEL` | yes | — | Exact model id for the chosen provider |
+| `LLM_PROVIDER` | yes | `gemini` | `gemini` (implemented) \| `anthropic` \| `openai` (stubs) |
+| `LLM_MODEL` | yes | — | Exact model id, e.g. `gemini-3.5-flash` (what the examples were generated with) |
 | `ANTHROPIC_API_KEY` / `OPENAI_API_KEY` / `GEMINI_API_KEY` | the one matching the provider | — | Provider API key |
 | `PORT` | no | `8080` | HTTP port |
 | `DATA_DIR` | no | `./data` | Job JSON storage directory |

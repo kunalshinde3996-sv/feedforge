@@ -1,0 +1,210 @@
+{
+  "id": "5ecb32ec-e3d1-4cc5-b43f-4855b941ed07",
+  "createdAt": "2026-09-30T07:48:57.074Z",
+  "updatedAt": "2026-09-30T07:50:32.407Z",
+  "input": {
+    "topic": "How UPI changed small shops"
+  },
+  "llm": {
+    "provider": "gemini",
+    "model": "gemini-3.5-flash"
+  },
+  "status": "passed",
+  "currentStage": "done",
+  "attempts": [
+    {
+      "n": 1,
+      "rewrittenFrom": null,
+      "plan": {
+        "topic": "How UPI changed small shops",
+        "hookOptions": [
+          "How a blue QR code saved India's smallest street vendors.",
+          "This tiny sticker did what major banks couldn't do.",
+          "Remember when you couldn't buy chai without exact change?"
+        ],
+        "hook": "This tiny sticker did what major banks couldn't do.",
+        "title": "How a simple QR sticker revolutionized India's street shops",
+        "description": "Discover how UPI and a simple sticker brought millions of micro-merchants into the digital economy overnight.",
+        "hashtags": [
+          "#UPI",
+          "#DigitalIndia",
+          "#Fintech",
+          "#StreetVendors",
+          "#SmallBusiness"
+        ],
+        "scenes": [
+          {
+            "id": 1,
+            "durationSec": 5,
+            "visualQuery": "close up UPI QR code sticker on rustic wooden tea stall street",
+            "onScreenText": "The sticker that changed everything.",
+            "voiceover": "This tiny paper sticker did what giant global banks couldn't do."
+          },
+          {
+            "id": 2,
+            "durationSec": 6,
+            "visualQuery": "indian shopkeeper searching cash drawer frustrated customer waiting",
+            "onScreenText": "No change meant no sale.",
+            "voiceover": "Remember the daily struggle for exact change? No change often meant a lost sale."
+          },
+          {
+            "id": 3,
+            "durationSec": 6,
+            "visualQuery": "hand scanning QR code with smartphone street vendor close up",
+            "onScreenText": "Instant payments for pennies.",
+            "voiceover": "Then came UPI. Instantly, a ten-rupee cup of tea could be paid digitally with zero fees."
+          },
+          {
+            "id": 4,
+            "durationSec": 6,
+            "visualQuery": "happy indian vegetable vendor looking at smartphone smiling screen",
+            "onScreenText": "Building credit with every transaction.",
+            "voiceover": "It gave local sellers a digital footprint, helping them get bank loans for the first time."
+          },
+          {
+            "id": 5,
+            "durationSec": 5,
+            "visualQuery": "paytm soundbox on counter shopkeeper busy in background",
+            "onScreenText": "Audio alerts solved the trust gap.",
+            "voiceover": "Now, smart speakers announce payments out loud, saving busy vendors from checking screens."
+          },
+          {
+            "id": 6,
+            "durationSec": 6,
+            "visualQuery": "bustling indian street market night vibrant lights crowd shopping",
+            "onScreenText": "When did you last use cash?",
+            "voiceover": "It turned street vendors into fintech leaders. When was the last time you used actual cash?"
+          }
+        ],
+        "totalDurationSec": 34
+      },
+      "script": {
+        "startedAt": "2026-09-30T07:49:40.452Z",
+        "finishedAt": "2026-09-30T07:50:10.134Z",
+        "durationMs": 29682,
+        "repairs": 0
+      },
+      "review": {
+        "scores": {
+          "hook": 8,
+          "clarity": 8,
+          "pacing": 7,
+          "safety": 10
+        },
+        "overall": 8.25,
+        "pass": true,
+        "feedback": "* Tighten the visual pacing in Scene 2 and Scene 3; 6 seconds is too long to show a single action like searching a drawer or scanning a QR code.\n* Ensure the visual in Scene 1 immediately zooms in on the sticker to instantly match the curiosity of the hook.\n* The transition to Scene 5 feels slightly abrupt; tweak the voiceover to connect the soundbox directly to the busy street environment.",
+        "startedAt": "2026-09-30T07:50:10.139Z",
+        "finishedAt": "2026-09-30T07:50:32.406Z",
+        "durationMs": 22268,
+        "repairs": 0
+      },
+      "outcome": "passed"
+    }
+  ],
+  "finalPlan": {
+    "topic": "How UPI changed small shops",
+    "hookOptions": [
+      "How a blue QR code saved India's smallest street vendors.",
+      "This tiny sticker did what major banks couldn't do.",
+      "Remember when you couldn't buy chai without exact change?"
+    ],
+    "hook": "This tiny sticker did what major banks couldn't do.",
+    "title": "How a simple QR sticker revolutionized India's street shops",
+    "description": "Discover how UPI and a simple sticker brought millions of micro-merchants into the digital economy overnight.",
+    "hashtags": [
+      "#UPI",
+      "#DigitalIndia",
+      "#Fintech",
+      "#StreetVendors",
+      "#SmallBusiness"
+    ],
+    "scenes": [
+      {
+        "id": 1,
+        "durationSec": 5,
+        "visualQuery": "close up UPI QR code sticker on rustic wooden tea stall street",
+        "onScreenText": "The sticker that changed everything.",
+        "voiceover": "This tiny paper sticker did what giant global banks couldn't do."
+      },
+      {
+        "id": 2,
+        "durationSec": 6,
+        "visualQuery": "indian shopkeeper searching cash drawer frustrated customer waiting",
+        "onScreenText": "No change meant no sale.",
+        "voiceover": "Remember the daily struggle for exact change? No change often meant a lost sale."
+      },
+      {
+        "id": 3,
+        "durationSec": 6,
+        "visualQuery": "hand scanning QR code with smartphone street vendor close up",
+        "onScreenText": "Instant payments for pennies.",
+        "voiceover": "Then came UPI. Instantly, a ten-rupee cup of tea could be paid digitally with zero fees."
+      },
+      {
+        "id": 4,
+        "durationSec": 6,
+        "visualQuery": "happy indian vegetable vendor looking at smartphone smiling screen",
+        "onScreenText": "Building credit with every transaction.",
+        "voiceover": "It gave local sellers a digital footprint, helping them get bank loans for the first time."
+      },
+      {
+        "id": 5,
+        "durationSec": 5,
+        "visualQuery": "paytm soundbox on counter shopkeeper busy in background",
+        "onScreenText": "Audio alerts solved the trust gap.",
+        "voiceover": "Now, smart speakers announce payments out loud, saving busy vendors from checking screens."
+      },
+      {
+        "id": 6,
+        "durationSec": 6,
+        "visualQuery": "bustling indian street market night vibrant lights crowd shopping",
+        "onScreenText": "When did you last use cash?",
+        "voiceover": "It turned street vendors into fintech leaders. When was the last time you used actual cash?"
+      }
+    ],
+    "totalDurationSec": 34
+  },
+  "passedAttempt": 1,
+  "timings": [
+    {
+      "stage": "script",
+      "attempt": 1,
+      "run": 1,
+      "startedAt": "2026-09-30T07:48:57.078Z",
+      "finishedAt": "2026-09-30T07:49:18.046Z",
+      "durationMs": 20968,
+      "outcome": "retrying",
+      "error": "Gemini API 503: This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later."
+    },
+    {
+      "stage": "script",
+      "attempt": 1,
+      "run": 2,
+      "startedAt": "2026-09-30T07:49:19.065Z",
+      "finishedAt": "2026-09-30T07:49:38.432Z",
+      "durationMs": 19367,
+      "outcome": "retrying",
+      "error": "Gemini API 503: This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later."
+    },
+    {
+      "stage": "script",
+      "attempt": 1,
+      "run": 3,
+      "startedAt": "2026-09-30T07:49:40.452Z",
+      "finishedAt": "2026-09-30T07:50:10.134Z",
+      "durationMs": 29682,
+      "outcome": "ok"
+    },
+    {
+      "stage": "quality_gate",
+      "attempt": 1,
+      "run": 1,
+      "startedAt": "2026-09-30T07:50:10.139Z",
+      "finishedAt": "2026-09-30T07:50:32.406Z",
+      "durationMs": 22268,
+      "outcome": "ok"
+    }
+  ],
+  "error": null
+}

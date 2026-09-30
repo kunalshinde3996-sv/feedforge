@@ -1,0 +1,210 @@
+{
+  "id": "38ffe0b7-209e-4346-8e0c-52e7eb43186e",
+  "createdAt": "2026-09-30T07:51:12.494Z",
+  "updatedAt": "2026-09-30T07:52:35.980Z",
+  "input": {
+    "topic": "Monsoon street food in Mumbai"
+  },
+  "llm": {
+    "provider": "gemini",
+    "model": "gemini-3.5-flash"
+  },
+  "status": "passed",
+  "currentStage": "done",
+  "attempts": [
+    {
+      "n": 1,
+      "rewrittenFrom": null,
+      "plan": {
+        "topic": "Monsoon street food in Mumbai",
+        "hookOptions": [
+          "Why does Mumbai crave this one fried snack when it rains?",
+          "Mumbai rains are chaotic, but this one snack makes it perfect.",
+          "Wet shoes, pouring rain, but you’d still stand in this line."
+        ],
+        "hook": "Wet shoes, pouring rain, but you’d still stand in this line.",
+        "title": "Mumbai's Ultimate Monsoon Street Food Guide",
+        "description": "Experience the magic of Mumbai rains through its most iconic street snacks. From sizzling Vada Pav to hot cutting chai, here is how the city celebrates the monsoon.",
+        "hashtags": [
+          "#MumbaiRain",
+          "#StreetFood",
+          "#VadaPav",
+          "#MonsoonVibes",
+          "#IndianStreetFood"
+        ],
+        "scenes": [
+          {
+            "id": 1,
+            "durationSec": 4,
+            "visualQuery": "rain pouring mumbai street yellow taxi headlights reflection wet road night",
+            "onScreenText": "Rain doesn't stop the hunger.",
+            "voiceover": "Wet shoes, pouring rain, but you’d still stand in this line."
+          },
+          {
+            "id": 2,
+            "durationSec": 6,
+            "visualQuery": "street vendor frying golden vada pav hot oil steam rising monsoon rain background",
+            "onScreenText": "The ultimate monsoon comfort food.",
+            "voiceover": "There’s nothing like the sizzle of hot Vada Pav while the city gets drenched around you."
+          },
+          {
+            "id": 3,
+            "durationSec": 6,
+            "visualQuery": "hands pouring hot cutting chai tea glass kettle rainy day mumbai",
+            "onScreenText": "Spiced chai is non-negotiable.",
+            "voiceover": "Pair it with a hot cutting chai, spiced with ginger, to wash down the heat."
+          },
+          {
+            "id": 4,
+            "durationSec": 6,
+            "visualQuery": "crispy onion pakora bhajia being scooped out of frying pan close up",
+            "onScreenText": "Crispy, hot onion fritters.",
+            "voiceover": "Or grab a plate of crispy Kanda Bhajias. They are literally made for rainy afternoons."
+          },
+          {
+            "id": 5,
+            "durationSec": 5,
+            "visualQuery": "happy friends sharing food under umbrella marine drive mumbai rain",
+            "onScreenText": "Mumbai hits different in the rain.",
+            "voiceover": "It’s not just about the food. It’s how the whole city slows down together."
+          },
+          {
+            "id": 6,
+            "durationSec": 5,
+            "visualQuery": "pov holding half eaten vada pav green chutney dripping cloudy sea background",
+            "onScreenText": "What is your monsoon favorite?",
+            "voiceover": "What’s your go-to street food when it starts pouring? Tell us below!"
+          }
+        ],
+        "totalDurationSec": 32
+      },
+      "script": {
+        "startedAt": "2026-09-30T07:51:33.683Z",
+        "finishedAt": "2026-09-30T07:52:03.344Z",
+        "durationMs": 29661,
+        "repairs": 0
+      },
+      "review": {
+        "scores": {
+          "hook": 8,
+          "clarity": 8,
+          "pacing": 7,
+          "safety": 10
+        },
+        "overall": 8.25,
+        "pass": true,
+        "feedback": "The hook is highly sensory and effective, but ensure the visual in Scene 1 immediately shows a long, wet queue to match the 'stand in this line' voiceover. Trim Scene 3 (Chai) and Scene 4 (Bhajias) from 6 seconds to 4 seconds to keep the mid-video pacing from dragging. In Scene 5, the line 'It’s how the whole city slows down together' feels slightly contradictory to Mumbai's fast-paced reputation; consider changing it to 'It's how the city finds comfort together.'",
+        "startedAt": "2026-09-30T07:52:15.042Z",
+        "finishedAt": "2026-09-30T07:52:35.979Z",
+        "durationMs": 20938,
+        "repairs": 0
+      },
+      "outcome": "passed"
+    }
+  ],
+  "finalPlan": {
+    "topic": "Monsoon street food in Mumbai",
+    "hookOptions": [
+      "Why does Mumbai crave this one fried snack when it rains?",
+      "Mumbai rains are chaotic, but this one snack makes it perfect.",
+      "Wet shoes, pouring rain, but you’d still stand in this line."
+    ],
+    "hook": "Wet shoes, pouring rain, but you’d still stand in this line.",
+    "title": "Mumbai's Ultimate Monsoon Street Food Guide",
+    "description": "Experience the magic of Mumbai rains through its most iconic street snacks. From sizzling Vada Pav to hot cutting chai, here is how the city celebrates the monsoon.",
+    "hashtags": [
+      "#MumbaiRain",
+      "#StreetFood",
+      "#VadaPav",
+      "#MonsoonVibes",
+      "#IndianStreetFood"
+    ],
+    "scenes": [
+      {
+        "id": 1,
+        "durationSec": 4,
+        "visualQuery": "rain pouring mumbai street yellow taxi headlights reflection wet road night",
+        "onScreenText": "Rain doesn't stop the hunger.",
+        "voiceover": "Wet shoes, pouring rain, but you’d still stand in this line."
+      },
+      {
+        "id": 2,
+        "durationSec": 6,
+        "visualQuery": "street vendor frying golden vada pav hot oil steam rising monsoon rain background",
+        "onScreenText": "The ultimate monsoon comfort food.",
+        "voiceover": "There’s nothing like the sizzle of hot Vada Pav while the city gets drenched around you."
+      },
+      {
+        "id": 3,
+        "durationSec": 6,
+        "visualQuery": "hands pouring hot cutting chai tea glass kettle rainy day mumbai",
+        "onScreenText": "Spiced chai is non-negotiable.",
+        "voiceover": "Pair it with a hot cutting chai, spiced with ginger, to wash down the heat."
+      },
+      {
+        "id": 4,
+        "durationSec": 6,
+        "visualQuery": "crispy onion pakora bhajia being scooped out of frying pan close up",
+        "onScreenText": "Crispy, hot onion fritters.",
+        "voiceover": "Or grab a plate of crispy Kanda Bhajias. They are literally made for rainy afternoons."
+      },
+      {
+        "id": 5,
+        "durationSec": 5,
+        "visualQuery": "happy friends sharing food under umbrella marine drive mumbai rain",
+        "onScreenText": "Mumbai hits different in the rain.",
+        "voiceover": "It’s not just about the food. It’s how the whole city slows down together."
+      },
+      {
+        "id": 6,
+        "durationSec": 5,
+        "visualQuery": "pov holding half eaten vada pav green chutney dripping cloudy sea background",
+        "onScreenText": "What is your monsoon favorite?",
+        "voiceover": "What’s your go-to street food when it starts pouring? Tell us below!"
+      }
+    ],
+    "totalDurationSec": 32
+  },
+  "passedAttempt": 1,
+  "timings": [
+    {
+      "stage": "script",
+      "attempt": 1,
+      "run": 1,
+      "startedAt": "2026-09-30T07:51:12.500Z",
+      "finishedAt": "2026-09-30T07:51:31.664Z",
+      "durationMs": 19162,
+      "outcome": "retrying",
+      "error": "Gemini API 503: This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later."
+    },
+    {
+      "stage": "script",
+      "attempt": 1,
+      "run": 2,
+      "startedAt": "2026-09-30T07:51:33.683Z",
+      "finishedAt": "2026-09-30T07:52:03.344Z",
+      "durationMs": 29661,
+      "outcome": "ok"
+    },
+    {
+      "stage": "quality_gate",
+      "attempt": 1,
+      "run": 1,
+      "startedAt": "2026-09-30T07:52:03.351Z",
+      "finishedAt": "2026-09-30T07:52:13.035Z",
+      "durationMs": 9684,
+      "outcome": "retrying",
+      "error": "Gemini API 503: This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later."
+    },
+    {
+      "stage": "quality_gate",
+      "attempt": 1,
+      "run": 2,
+      "startedAt": "2026-09-30T07:52:15.042Z",
+      "finishedAt": "2026-09-30T07:52:35.979Z",
+      "durationMs": 20938,
+      "outcome": "ok"
+    }
+  ],
+  "error": null
+}
