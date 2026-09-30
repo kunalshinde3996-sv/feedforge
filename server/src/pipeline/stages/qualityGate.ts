@@ -6,12 +6,12 @@ import { generateValidated } from '../llmJson.js';
 import { CRITIC_SYSTEM, criticPrompt } from '../prompts.js';
 
 export async function runQualityGate(llm: LLMProvider, plan: ScriptPlan) {
-  const { value, repairs } = await generateValidated(llm, {
+  const { value, repairs, model, fallback } = await generateValidated(llm, {
     system: CRITIC_SYSTEM,
     prompt: criticPrompt(plan),
     schema: CriticOutputSchema,
     temperature: 0.2,
     label: 'Quality Gate',
   });
-  return { review: toReview(value), repairs };
+  return { review: toReview(value), repairs, servedBy: { model, fallback } };
 }

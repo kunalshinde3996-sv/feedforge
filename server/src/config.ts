@@ -18,6 +18,7 @@ const ConfigSchema = z.object({
   DATA_DIR: z.string().default('./data'),
   LLM_PROVIDER: z.enum(['anthropic', 'openai', 'gemini']).default('gemini'),
   LLM_MODEL: z.preprocess(emptyToUndefined, z.string().optional()),
+  LLM_FALLBACK_MODEL: z.preprocess(emptyToUndefined, z.string().optional()),
   ANTHROPIC_API_KEY: z.preprocess(emptyToUndefined, z.string().optional()),
   OPENAI_API_KEY: z.preprocess(emptyToUndefined, z.string().optional()),
   GEMINI_API_KEY: z.preprocess(emptyToUndefined, z.string().optional()),

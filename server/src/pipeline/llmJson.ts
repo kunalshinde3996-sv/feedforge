@@ -11,7 +11,8 @@ export class LLMOutputInvalidError extends Error {
   }
 }
 
-type Result<T> = { value: T; repairs: number };
+/** `model`/`fallback`: which model produced the accepted output. */
+type Result<T> = { value: T; repairs: number; model: string; fallback: boolean };
 
 /** Strip ```json fences and surrounding prose, then JSON.parse. */
 export function extractJson(text: string): unknown {
@@ -45,10 +46,15 @@ export async function generateValidated<S extends z.ZodType>(
 
   let lastErr: unknown;
   for (let round = 0; round < 2; round++) {
-    const text = await llm.generate({ system: opts.system, messages, json: true, temperature: opts.temperature });
+    const { text, model, fallback } = await llm.generate({
+      system: opts.system,
+      messages,
+      json: true,
+      temperature: opts.temperature,
+    });
     try {
       const parsed = opts.schema.safeParse(extractJson(text));
-      if (parsed.success) return { value: parsed.data, repairs: round };
+      if (parsed.success) return { value: parsed.data, repairs: round, model, fallback };
       lastErr = parsed.error;
     } catch (e) {
       lastErr = e;

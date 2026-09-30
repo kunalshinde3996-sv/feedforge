@@ -15,7 +15,7 @@ export async function runScriptEngine(llm: LLMProvider, input: ScriptInput) {
     ? rewritePrompt(input.topic, input.previous.plan, input.previous.review, input.previous.attempt)
     : scriptPrompt(input.topic);
 
-  const { value, repairs } = await generateValidated(llm, {
+  const { value, repairs, model, fallback } = await generateValidated(llm, {
     system: SCRIPT_SYSTEM,
     prompt,
     schema: ScriptPlanSchema,
@@ -23,5 +23,5 @@ export async function runScriptEngine(llm: LLMProvider, input: ScriptInput) {
     label: 'Script Engine',
   });
   // topic is the user's input, not the model's paraphrase
-  return { plan: { ...value, topic: input.topic }, repairs };
+  return { plan: { ...value, topic: input.topic }, repairs, servedBy: { model, fallback } };
 }

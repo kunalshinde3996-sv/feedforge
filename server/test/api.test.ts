@@ -22,7 +22,7 @@ describe('API', () => {
     const s = setup(new MockLLM({}));
     const l = await listen(s.app);
     server = l.server;
-    for (const body of [{}, { topic: 'hi' }, { topic: 42 }]) {
+    for (const body of [{}, { topic: 'hi' }, { topic: 'UPI shops' }, { topic: 42 }]) {
       const res = await post(l.base, body);
       expect(res.status).toBe(400);
       const json = await res.json();
@@ -71,9 +71,9 @@ describe('API', () => {
     const s = setup(llm, { rateMax: 2 });
     const l = await listen(s.app);
     server = l.server;
-    expect((await post(l.base, { topic: 'topic one' })).status).toBe(202);
-    expect((await post(l.base, { topic: 'topic two' })).status).toBe(202);
-    const third = await post(l.base, { topic: 'topic three' });
+    expect((await post(l.base, { topic: 'first rate limit topic' })).status).toBe(202);
+    expect((await post(l.base, { topic: 'second rate limit topic' })).status).toBe(202);
+    const third = await post(l.base, { topic: 'third rate limit topic' });
     expect(third.status).toBe(429);
     expect((await third.json()).error.code).toBe('RATE_LIMITED');
     await s.queue.drain();
@@ -83,7 +83,7 @@ describe('API', () => {
     const s = setup(new MockLLM({}), { pipeline: false });
     const l = await listen(s.app);
     server = l.server;
-    const res = await post(l.base, { topic: 'valid topic' });
+    const res = await post(l.base, { topic: 'a perfectly valid topic' });
     expect(res.status).toBe(503);
     expect((await res.json()).error.code).toBe('LLM_NOT_CONFIGURED');
   });

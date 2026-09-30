@@ -115,10 +115,16 @@ export function useHashSelection() {
     return () => window.removeEventListener('hashchange', onHash);
   }, []);
 
-  const select = useCallback((next: string | null) => {
+  /** `replace`: update the URL without adding a history entry (used for the default selection). */
+  const select = useCallback((next: string | null, opts: { replace?: boolean } = {}) => {
     setId(next);
+    const hash = next ? `#/jobs/${next}` : '';
+    if (opts.replace) {
+      history.replaceState(null, '', hash || location.pathname + location.search); // no hashchange event
+      return;
+    }
     skip.current = true;
-    location.hash = next ? `/jobs/${next}` : '';
+    location.hash = hash;
   }, []);
 
   return [id, select] as const;

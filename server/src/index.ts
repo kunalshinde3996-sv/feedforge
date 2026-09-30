@@ -9,6 +9,7 @@ import { Pipeline } from './pipeline/runner.js';
 import { createLLMProvider, type LLMProvider } from './providers/index.js';
 import { InProcessQueue } from './queue/inProcessQueue.js';
 import { FileJobStore } from './store/fileStore.js';
+import { seedSampleRuns } from './store/seed.js';
 
 const store = new FileJobStore(config.DATA_DIR);
 await store.init();
@@ -30,8 +31,14 @@ if (pipeline) {
   if (recovered) logger.warn('marked interrupted jobs as failed', { count: recovered });
 }
 
-// Built dashboard: <repo>/web/dist (same relative location from src/ and dist/).
-const webDist = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../web/dist');
+// <repo> root — same relative location from src/ and dist/.
+const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
+
+// Never show an empty/failed-only dashboard: seed real passed runs from /examples if needed.
+await seedSampleRuns(store, path.join(repoRoot, 'examples'));
+
+// Built dashboard: <repo>/web/dist
+const webDist = path.join(repoRoot, 'web/dist');
 const hasDashboard = existsSync(path.join(webDist, 'index.html'));
 
 const app = createApp({
@@ -48,6 +55,7 @@ const server = app.listen(config.PORT, () => {
     env: config.NODE_ENV,
     llmProvider: config.LLM_PROVIDER,
     llmModel: config.LLM_MODEL ?? '(not set)',
+    llmFallbackModel: config.LLM_FALLBACK_MODEL ?? '(none)',
     dashboard: hasDashboard ? webDist : '(not built — API only)',
     dataDir: config.DATA_DIR,
   });

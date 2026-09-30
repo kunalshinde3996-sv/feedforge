@@ -1,5 +1,22 @@
 import type { Job, JobSummary } from './types';
 
+/** Mirrors the server rule (CreateJobSchema): at least 3 words OR 12 characters. */
+export const TOPIC_HINT = "Add a bit more detail, e.g. 'Climate change effects on Indian farmers'";
+export function isDetailedTopic(topic: string): boolean {
+  const t = topic.trim();
+  return t.split(/\s+/).filter(Boolean).length >= 3 || t.length >= 12;
+}
+
+/** Models that actually served this job's stages, e.g. "gemini-3.5-flash-lite (fallback)". */
+export function servedModelsLabel(job: Job): string {
+  const seen = new Map<string, boolean>();
+  for (const a of job.attempts) {
+    for (const s of [a.script.servedBy, a.review?.servedBy]) if (s) seen.set(s.model, seen.get(s.model) || s.fallback);
+  }
+  if (seen.size === 0) return job.llm.model;
+  return [...seen].map(([model, fallback]) => (fallback ? `${model} (fallback)` : model)).join(' + ');
+}
+
 export const cn = (...c: Array<string | false | null | undefined>) => c.filter(Boolean).join(' ');
 
 export const fmtSec = (ms: number) => `${(ms / 1000).toFixed(1)}s`;
@@ -30,6 +47,7 @@ export function toSummary(job: Job): JobSummary {
     attempts: job.attempts.length,
     lastOverall: last?.review?.overall ?? null,
     hook: job.finalPlan?.hook ?? null,
+    sample: job.sample ?? false,
   };
 }
 

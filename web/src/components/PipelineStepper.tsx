@@ -3,7 +3,7 @@ import { cn, fmtScore } from '../lib';
 import { MAX_ATTEMPTS, TERMINAL, type Job } from '../types';
 
 type StepState = 'done' | 'active' | 'failed' | 'pending' | 'phase2';
-type Step = { key: string; label: string; state: StepState; detail?: string };
+type Step = { key: string; label: string; short?: string; state: StepState; detail?: string };
 
 function steps(job: Job): Step[] {
   const terminal = TERMINAL.includes(job.status);
@@ -25,21 +25,21 @@ function steps(job: Job): Step[] {
 
   let gate: Step;
   if (job.status === 'passed')
-    gate = { key: 'gate', label: 'Quality Gate', state: 'done', detail: `Passed · ${fmtScore(last!.review!.overall)}/10` };
+    gate = { key: 'gate', label: 'Quality Gate', short: 'Gate', state: 'done', detail: `Passed · ${fmtScore(last!.review!.overall)}/10` };
   else if (job.status === 'rejected' && job.currentStage === 'quality_gate')
-    gate = { key: 'gate', label: 'Quality Gate', state: 'failed', detail: 'Rejected · safety' };
+    gate = { key: 'gate', label: 'Quality Gate', short: 'Gate', state: 'failed', detail: 'Rejected · safety' };
   else if (job.status === 'failed' && job.currentStage === 'quality_gate')
     gate = {
       key: 'gate',
-      label: 'Quality Gate',
+      label: 'Quality Gate', short: 'Gate',
       state: 'failed',
       detail: job.error?.code === 'QUALITY_GATE_EXHAUSTED' ? `Failed · ${n}/${MAX_ATTEMPTS} attempts` : 'Error',
     };
   else if (job.currentStage === 'quality_gate' && !terminal)
-    gate = { key: 'gate', label: 'Quality Gate', state: 'active', detail: `Scoring attempt ${n}` };
+    gate = { key: 'gate', label: 'Quality Gate', short: 'Gate', state: 'active', detail: `Scoring attempt ${n}` };
   else if (last?.review && !last.review.pass)
-    gate = { key: 'gate', label: 'Quality Gate', state: 'pending', detail: `Attempt ${last.n} failed` };
-  else gate = { key: 'gate', label: 'Quality Gate', state: 'pending', detail: terminal ? 'Not reached' : undefined };
+    gate = { key: 'gate', label: 'Quality Gate', short: 'Gate', state: 'pending', detail: `Attempt ${last.n} failed` };
+  else gate = { key: 'gate', label: 'Quality Gate', short: 'Gate', state: 'pending', detail: terminal ? 'Not reached' : undefined };
 
   return [
     { key: 'input', label: 'Input', state: 'done', detail: 'Topic received' },
@@ -56,7 +56,10 @@ const ICON: Record<StepState, string> = { done: '✓', active: '', failed: '✕'
 export function PipelineStepper({ job }: { job: Job }) {
   const list = steps(job);
   return (
-    <ol aria-label="Pipeline stages" className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
+    <ol
+      aria-label="Pipeline stages"
+      className="grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-[repeat(6,minmax(max-content,1fr))]"
+    >
       {list.map((s, i) => (
         <li
           key={s.key}
@@ -83,11 +86,21 @@ export function PipelineStepper({ job }: { job: Job }) {
             >
               {ICON[s.state] || (s.state === 'active' ? '' : i + 1)}
             </span>
-            <span className="truncate font-heading text-sm font-semibold">{s.label}</span>
+            <span className="whitespace-nowrap font-heading text-sm font-semibold">
+              {s.short ? (
+                <>
+                  <span className="sm:hidden">{s.short}</span>
+                  <span className="hidden sm:inline">{s.label}</span>
+                </>
+              ) : (
+                s.label
+              )}
+            </span>
           </div>
           <p
             className={cn(
-              'mt-1 truncate text-xs',
+              // contain: detail text never widens the column; it truncates instead
+              'mt-1 truncate text-xs [contain:inline-size]',
               s.state === 'active' ? 'text-violet' : s.state === 'failed' ? 'text-red-200' : 'text-white/50',
             )}
           >

@@ -2,6 +2,8 @@
 
 **Type a topic. Get a publish-ready Qoneqt video.**
 
+**Live demo:** https://feedforge-iuee.onrender.com
+
 Built for **Qoneqt × CTRL FREAK 2026** by **Team Dravex — MIT ADT University**.
 
 > **Phase 1 (this repo):** topic → Script Engine → Quality Gate, with a live dashboard, deployed as one Docker service. See [Deploy](#deploy-render) and the [Phase 2 roadmap](#phase-1-vs-phase-2).
@@ -54,6 +56,12 @@ POST /api/jobs ─► Pipeline.submit ─► JobStore.create ─► JobQueue.enq
 
 Each stage is a separate queue task that returns the next task. Phase 2 stages (`assets`, `compose`, `publish`) chain on after `passed` without changing the Phase 1 flow. `JobQueue` maps 1:1 onto BullMQ (retry policy → `attempts` + exponential `backoff`).
 
+## Screenshots
+
+![FeedForge dashboard](docs/dashboard.png)
+
+![Quality Gate panel](docs/quality-gate.png)
+
 ## Dashboard
 
 A single page (React + Tailwind) that streams every stage live over Server-Sent Events:
@@ -68,6 +76,9 @@ A single page (React + Tailwind) that streams every stage live over Server-Sent 
 - **Plan:** a large hook with the 3 drafted options (the chosen one is marked), a scene table, title, description and hashtags. A plan that never passed the gate is clearly labeled as a draft.
 - **Stage timings:** per-stage totals, end-to-end time, and every run including retries and errors.
 - **Download JSON** exports the full job.
+- **Sample runs:** on a fresh deploy the server seeds the real passed runs from [`examples/`](examples/). They are labeled **"Sample run"**, and the newest one opens by default, so visitors land on a complete Quality Gate result even when the job history was wiped or the LLM quota is used up.
+- **Friendly errors:** a quota or overload error reads as plain language ("The AI provider is busy right now…"). The raw provider message sits in a collapsed *Technical details* block. Failed jobs have a **Retry** button that re-submits the same topic.
+- **Which model served each stage** is shown in the job header and on each attempt card, e.g. `gemini-3.5-flash-lite (fallback)`.
 - **States:** loading, empty and error states are handled. The layout is responsive down to 390px, and the selected job is kept in the URL (`#/jobs/<id>`).
 
 ## Phase 1 vs Phase 2
@@ -121,7 +132,7 @@ Full real job outputs: [`examples/`](examples/).
 
 | Method | Path | Description |
 |---|---|---|
-| `POST` | `/api/jobs` | `{ "topic": "3–200 chars" }` → `202 { "jobId" }`. Rate-limited per IP |
+| `POST` | `/api/jobs` | `{ "topic": "…" }` (≥ 3 words or ≥ 12 chars, ≤ 200) → `202 { "jobId" }`. Rate-limited per IP |
 | `GET` | `/api/jobs` | Job summaries, newest first |
 | `GET` | `/api/jobs/:id` | Full job: input, status, current stage, all attempts, final plan, stage timings, error |
 | `GET` | `/api/jobs/:id/events` | SSE: `event: job` (full job) on every update, `event: end` on a terminal status |
@@ -198,7 +209,7 @@ The Blueprint config:
 | `region` | `singapore`, closest to Qoneqt's audience in India |
 | `healthCheckPath` | `/api/health` |
 | `autoDeployTrigger` | `commit`: every push to the linked branch redeploys |
-| Environment | `LLM_PROVIDER=gemini`, `LLM_MODEL=gemini-3.5-flash`, rate limit 10 jobs/min/IP. The key is set in the dashboard |
+| Environment | `LLM_PROVIDER=gemini`, `LLM_MODEL=gemini-3.5-flash`, `LLM_FALLBACK_MODEL=gemini-3.5-flash-lite`, rate limit 10 jobs/min/IP. The key is set in the dashboard |
 
 **Render free-plan behavior (plan the demo around it):**
 - The service **spins down after 15 minutes without traffic**, and the next request takes about **1 minute** to wake it. Open the URL a few minutes before presenting.
@@ -206,7 +217,10 @@ The Blueprint config:
 - SSE works through Render's proxy. The server sends a heartbeat every 15s to keep streams open.
 - On deploy, Render sends `SIGTERM`. The server stops cleanly, and any job that was mid-flight is marked `failed` (`INTERRUPTED`) on the next boot.
 
-**Gemini free-tier quota.** A free-tier key has a **daily request cap per model**. At the time of writing, this project's key was capped at 20 requests/day for `gemini-3.5-flash`. One job uses 2 calls if it passes first time, and up to about 6 with rewrites. When the cap is hit, jobs fail immediately with `LLM_QUOTA_EXHAUSTED` instead of retrying. Check usage at https://ai.dev/rate-limit, and enable billing on the Google AI project before a live demo.
+**Gemini free-tier quota.** A free-tier key has a **daily request cap per model**. At the time of writing, this project's key was capped at 20 requests/day for `gemini-3.5-flash`. One job uses 2 calls if it passes first time, and up to about 6 with rewrites. Mitigations built in:
+- **Fallback model:** if the primary returns 429 or 503, that same call is retried once on `LLM_FALLBACK_MODEL`. The free-tier cap is counted per model, so this adds a second daily allowance.
+- **Fail fast:** when both models are capped, the job fails immediately with `LLM_QUOTA_EXHAUSTED` and a friendly message, instead of retrying.
+- **Sample runs:** these keep the dashboard useful even with no quota left. Check usage at https://ai.dev/rate-limit, and enable billing on the Google AI project before a live demo.
 
 ## Environment variables
 
@@ -214,6 +228,7 @@ The Blueprint config:
 |---|---|---|---|
 | `LLM_PROVIDER` | yes | `gemini` | `gemini` (implemented) \| `anthropic` \| `openai` (stubs) |
 | `LLM_MODEL` | yes | — | Exact model id, e.g. `gemini-3.5-flash` (what the examples were generated with) |
+| `LLM_FALLBACK_MODEL` | no | — | Tried once per call when the primary returns 429/503, e.g. `gemini-3.5-flash-lite`. The model that actually served each stage is recorded in the job JSON (`servedBy`) |
 | `ANTHROPIC_API_KEY` / `OPENAI_API_KEY` / `GEMINI_API_KEY` | the one matching the provider | — | Provider API key |
 | `PORT` | no | `8080` | HTTP port |
 | `DATA_DIR` | no | `./data` | Job JSON storage directory |

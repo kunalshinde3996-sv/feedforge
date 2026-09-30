@@ -28,6 +28,8 @@ export type ScriptPlan = {
 
 export type Scores = { hook: number; clarity: number; pacing: number; safety: number };
 
+export type ServedBy = { model: string; fallback: boolean };
+
 export type Review = {
   scores: Scores;
   overall: number;
@@ -37,6 +39,7 @@ export type Review = {
   finishedAt: string;
   durationMs: number;
   repairs: number;
+  servedBy?: ServedBy;
 };
 
 export type AttemptOutcome = 'pending' | 'passed' | 'failed_quality' | 'failed_safety';
@@ -45,7 +48,7 @@ export type Attempt = {
   n: number;
   rewrittenFrom: number | null;
   plan: ScriptPlan;
-  script: { startedAt: string; finishedAt: string; durationMs: number; repairs: number };
+  script: { startedAt: string; finishedAt: string; durationMs: number; repairs: number; servedBy?: ServedBy };
   review: Review | null;
   outcome: AttemptOutcome;
 };
@@ -68,7 +71,7 @@ export type Job = {
   createdAt: string;
   updatedAt: string;
   input: { topic: string };
-  llm: { provider: string; model: string };
+  llm: { provider: string; model: string; fallbackModel?: string | null };
   status: JobStatus;
   currentStage: StageName | 'done';
   attempts: Attempt[];
@@ -76,6 +79,7 @@ export type Job = {
   passedAttempt: number | null;
   timings: StageTiming[];
   error: JobError | null;
+  sample?: boolean;
 };
 
 export type JobSummary = {
@@ -89,4 +93,5 @@ export type JobSummary = {
   attempts: number;
   lastOverall: number | null;
   hook: string | null;
+  sample: boolean;
 };

@@ -4,7 +4,7 @@ import { createApp } from '../src/app.js';
 import { JobEvents } from '../src/lib/events.js';
 import { Pipeline } from '../src/pipeline/runner.js';
 import { CRITIC_SYSTEM, SCRIPT_SYSTEM } from '../src/pipeline/prompts.js';
-import type { LLMProvider, LLMRequest } from '../src/providers/index.js';
+import type { LLMProvider, LLMRequest, LLMResult } from '../src/providers/index.js';
 import { InProcessQueue } from '../src/queue/inProcessQueue.js';
 import { MemoryJobStore } from '../src/store/memoryStore.js';
 
@@ -16,16 +16,23 @@ export class MockLLM implements LLMProvider {
   readonly model = 'mock-model';
   readonly calls: { kind: 'script' | 'critic'; req: LLMRequest }[] = [];
 
-  constructor(private readonly responses: { script?: Scripted[]; critic?: Scripted[] }) {}
+  constructor(
+    private readonly responses: { script?: Scripted[]; critic?: Scripted[] },
+    /** When set, every response reports it was served by this fallback model. */
+    private readonly servedByFallback?: string,
+  ) {}
 
-  async generate(req: LLMRequest): Promise<string> {
+  async generate(req: LLMRequest): Promise<LLMResult> {
     const kind = req.system === SCRIPT_SYSTEM ? 'script' : req.system === CRITIC_SYSTEM ? 'critic' : null;
     if (!kind) throw new Error('MockLLM: unknown system prompt');
     this.calls.push({ kind, req });
     const next = this.responses[kind]?.shift();
     if (next === undefined) throw new Error(`MockLLM: no more ${kind} responses`);
     if (next instanceof Error) throw next;
-    return typeof next === 'string' ? next : JSON.stringify(next);
+    const text = typeof next === 'string' ? next : JSON.stringify(next);
+    return this.servedByFallback
+      ? { text, model: this.servedByFallback, fallback: true }
+      : { text, model: this.model, fallback: false };
   }
 
   count(kind: 'script' | 'critic') {

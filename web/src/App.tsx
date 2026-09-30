@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import { api } from './api';
 import { JobDetail } from './components/JobDetail';
 import { JobList } from './components/JobList';
 import { TopicForm } from './components/TopicForm';
@@ -17,11 +18,43 @@ export default function App() {
     if (stream.job) upsert(toSummary(stream.job));
   }, [stream.job, upsert]);
 
+  // Land on a full result: with no job in the URL, open the most recent sample run (list is newest first).
+  const latestSample = list.jobs?.find((j) => j.sample) ?? null;
+  const autoSelected = useRef(false);
+  useEffect(() => {
+    if (autoSelected.current || !list.jobs) return;
+    autoSelected.current = true;
+    if (!selectedId && latestSample) select(latestSample.id, { replace: true });
+  }, [list.jobs, latestSample, selectedId, select]);
+
   const open = (id: string) => {
     select(id);
     if (window.matchMedia('(max-width: 1023px)').matches) {
       requestAnimationFrame(() => detailRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
     }
+  };
+
+  const started = (jobId: string, topic: string) => {
+    const now = new Date().toISOString();
+    upsert({
+      id: jobId,
+      topic,
+      createdAt: now,
+      updatedAt: now,
+      status: 'queued',
+      currentStage: 'script',
+      error: null,
+      attempts: 0,
+      lastOverall: null,
+      hook: null,
+      sample: false,
+    });
+    open(jobId);
+  };
+
+  const retry = async (topic: string) => {
+    const { jobId } = await api.createJob(topic);
+    started(jobId, topic);
   };
 
   return (
@@ -35,30 +68,19 @@ export default function App() {
 
       <div className="grid gap-4 lg:grid-cols-[minmax(320px,380px)_1fr] lg:gap-6">
         <aside className="space-y-4">
-          <TopicForm
-            onCreated={(jobId, topic) => {
-              const now = new Date().toISOString();
-              upsert({
-                id: jobId,
-                topic,
-                createdAt: now,
-                updatedAt: now,
-                status: 'queued',
-                currentStage: 'script',
-                error: null,
-                attempts: 0,
-                lastOverall: null,
-                hook: null,
-              });
-              open(jobId);
-            }}
-          />
+          <TopicForm onCreated={started} />
           <JobList jobs={list.jobs} error={list.error} selectedId={selectedId} onSelect={open} onRetry={list.refresh} />
         </aside>
 
         <main ref={detailRef} className="min-w-0 scroll-mt-4">
           {selectedId ? (
-            <JobDetail job={stream.job} error={stream.error} connection={stream.connection} />
+            <JobDetail
+              job={stream.job}
+              error={stream.error}
+              connection={stream.connection}
+              onRetry={retry}
+              onShowSample={latestSample ? () => open(latestSample.id) : null}
+            />
           ) : (
             <EmptyDetail />
           )}

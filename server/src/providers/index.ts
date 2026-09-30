@@ -11,7 +11,7 @@ export function createLLMProvider(config: Config): LLMProvider {
   switch (config.LLM_PROVIDER) {
     case 'gemini':
       if (!config.GEMINI_API_KEY) throw new Error('GEMINI_API_KEY is not set');
-      return new GeminiProvider(config.GEMINI_API_KEY, model);
+      return new GeminiProvider(config.GEMINI_API_KEY, model, config.LLM_FALLBACK_MODEL ?? null);
     case 'anthropic':
       return new AnthropicProvider(model);
     case 'openai':

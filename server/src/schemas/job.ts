@@ -2,12 +2,16 @@ import { z } from 'zod';
 import type { ScriptPlan } from './plan.js';
 import type { Review } from './review.js';
 
+export const TOPIC_HINT = "Add a bit more detail, e.g. 'Climate change effects on Indian farmers'";
+const wordCount = (s: string) => s.split(/s+/).filter(Boolean).length;
+
+/** A topic needs at least 3 words OR 12 characters, so the Script Engine has something to work with. */
 export const CreateJobSchema = z.object({
   topic: z
     .string({ error: 'topic is required' })
     .trim()
-    .min(3, 'topic must be at least 3 characters')
-    .max(200, 'topic must be at most 200 characters'),
+    .max(200, 'topic must be at most 200 characters')
+    .refine((t) => wordCount(t) >= 3 || t.length >= 12, TOPIC_HINT),
 });
 export type CreateJobInput = z.infer<typeof CreateJobSchema>;
 
@@ -33,14 +37,19 @@ export type StageTiming = {
   error?: string;
 };
 
+/** Which model actually produced a stage's output (fallback = primary was rate-limited/overloaded). */
+export type ServedBy = { model: string; fallback: boolean };
+
 export type AttemptOutcome = 'pending' | 'passed' | 'failed_quality' | 'failed_safety';
 
 export type Attempt = {
   n: number; // 1-based
   rewrittenFrom: number | null; // attempt this was rewritten from (with that attempt's critic feedback)
   plan: ScriptPlan;
-  script: { startedAt: string; finishedAt: string; durationMs: number; repairs: number };
-  review: (Review & { startedAt: string; finishedAt: string; durationMs: number; repairs: number }) | null;
+  script: { startedAt: string; finishedAt: string; durationMs: number; repairs: number; servedBy?: ServedBy };
+  review:
+    | (Review & { startedAt: string; finishedAt: string; durationMs: number; repairs: number; servedBy?: ServedBy })
+    | null;
   outcome: AttemptOutcome;
 };
 
@@ -51,7 +60,7 @@ export type Job = {
   createdAt: string;
   updatedAt: string;
   input: CreateJobInput;
-  llm: { provider: string; model: string };
+  llm: { provider: string; model: string; fallbackModel?: string | null };
   status: JobStatus;
   currentStage: StageName | 'done';
   attempts: Attempt[];
@@ -59,6 +68,8 @@ export type Job = {
   passedAttempt: number | null;
   timings: StageTiming[];
   error: JobError | null;
+  /** Pre-generated real run loaded from /examples (shown as "Sample run"). */
+  sample?: boolean;
 };
 
 export type JobSummary = Pick<Job, 'id' | 'createdAt' | 'updatedAt' | 'status' | 'currentStage' | 'error'> & {
@@ -66,6 +77,7 @@ export type JobSummary = Pick<Job, 'id' | 'createdAt' | 'updatedAt' | 'status' |
   attempts: number;
   lastOverall: number | null;
   hook: string | null;
+  sample: boolean;
 };
 
 export function toSummary(job: Job): JobSummary {
@@ -81,5 +93,6 @@ export function toSummary(job: Job): JobSummary {
     attempts: job.attempts.length,
     lastOverall: last?.review?.overall ?? null,
     hook: job.finalPlan?.hook ?? null,
+    sample: job.sample ?? false,
   };
 }

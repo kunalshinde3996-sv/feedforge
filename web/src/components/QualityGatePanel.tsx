@@ -201,6 +201,8 @@ function AttemptCard({ attempt: a, reviewing }: { attempt: Attempt; reviewing: b
         Script {fmtSec(a.script.durationMs)}
         {r && ` · critic ${fmtSec(r.durationMs)}`}
         {(a.script.repairs > 0 || (r?.repairs ?? 0) > 0) && ` · JSON repairs ${a.script.repairs + (r?.repairs ?? 0)}`}
+        {[a.script.servedBy, r?.servedBy].find((s) => s?.fallback) &&
+          ` · via ${[a.script.servedBy, r?.servedBy].find((s) => s?.fallback)!.model} (fallback)`}
       </footer>
     </article>
   );

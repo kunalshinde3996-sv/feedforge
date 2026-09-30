@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { extractJson } from '../src/pipeline/llmJson.js';
-import { CreateJobSchema } from '../src/schemas/job.js';
+import { CreateJobSchema, TOPIC_HINT } from '../src/schemas/job.js';
 import { ScriptPlanSchema, chosenHookIndex } from '../src/schemas/plan.js';
 import { CriticOutputSchema } from '../src/schemas/review.js';
 import { validPlan } from './helpers.js';
@@ -67,10 +67,20 @@ describe('CriticOutputSchema', () => {
 });
 
 describe('CreateJobSchema', () => {
-  it('enforces 3–200 chars after trimming', () => {
-    expect(CreateJobSchema.safeParse({ topic: '  ab ' }).success).toBe(false);
-    expect(CreateJobSchema.safeParse({ topic: 'x'.repeat(201) }).success).toBe(false);
-    expect(CreateJobSchema.parse({ topic: '  UPI  ' }).topic).toBe('UPI');
+  it('requires at least 3 words OR 12 characters (trimmed), max 200', () => {
+    const ok = (topic: string) => CreateJobSchema.safeParse({ topic }).success;
+    expect(ok('  UPI  ')).toBe(false);
+    expect(ok('UPI shops')).toBe(false); // 2 words, 9 chars
+    expect(ok('UPI in shops')).toBe(true); // 3 words
+    expect(ok('Cryptography')).toBe(true); // 12 chars
+    expect(ok('x'.repeat(201))).toBe(false);
+    expect(CreateJobSchema.parse({ topic: '  How UPI changed shops  ' }).topic).toBe('How UPI changed shops');
+  });
+
+  it('returns the helpful hint for too-short topics', () => {
+    const r = CreateJobSchema.safeParse({ topic: 'UPI' });
+    expect(r.success).toBe(false);
+    expect(r.error!.issues[0]!.message).toBe(TOPIC_HINT);
   });
 });
 

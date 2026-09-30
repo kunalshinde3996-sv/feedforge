@@ -1,9 +1,8 @@
 import { useState, type FormEvent } from 'react';
 import { ApiError, api } from '../api';
-import { cn } from '../lib';
+import { TOPIC_HINT, cn, isDetailedTopic } from '../lib';
 
 const EXAMPLES = ['Monsoon street food in Mumbai', 'How UPI changed small shops', '3 study habits that actually work'];
-const MIN = 3;
 const MAX = 200;
 
 export function TopicForm({ onCreated }: { onCreated: (jobId: string, topic: string) => void }) {
@@ -12,12 +11,12 @@ export function TopicForm({ onCreated }: { onCreated: (jobId: string, topic: str
   const [error, setError] = useState<string | null>(null);
 
   const trimmed = topic.trim();
-  const tooShort = trimmed.length > 0 && trimmed.length < MIN;
-  const valid = trimmed.length >= MIN && trimmed.length <= MAX;
+  const valid = isDetailedTopic(trimmed) && trimmed.length <= MAX;
+  const tooShort = trimmed.length > 0 && !valid;
 
   async function submit(value: string) {
     const t = value.trim();
-    if (t.length < MIN || t.length > MAX || busy) return;
+    if (!isDetailedTopic(t) || t.length > MAX || busy) return;
     setBusy(true);
     setError(null);
     try {
@@ -62,7 +61,7 @@ export function TopicForm({ onCreated }: { onCreated: (jobId: string, topic: str
           </button>
         </div>
         <p id="topic-help" className={cn('mt-1.5 text-xs', tooShort ? 'text-red-300' : 'text-white/45')}>
-          {tooShort ? `At least ${MIN} characters` : `${trimmed.length}/${MAX}`}
+          {tooShort ? TOPIC_HINT : `${trimmed.length}/${MAX}`}
         </p>
       </form>
 

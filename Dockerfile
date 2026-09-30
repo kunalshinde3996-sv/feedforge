@@ -23,6 +23,8 @@ COPY web/package.json web/
 RUN npm ci --omit=dev --workspace=server --no-audit --no-fund && npm cache clean --force
 COPY --from=build /app/server/dist server/dist
 COPY --from=build /app/web/dist web/dist
+# Real passed runs, seeded as "Sample run" jobs when the store has no passed job (fresh deploy).
+COPY examples examples
 RUN mkdir -p data && chown -R node:node data
 USER node
 EXPOSE 8080

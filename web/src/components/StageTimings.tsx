@@ -1,3 +1,4 @@
+import { sanitizeError } from '../errors';
 import { cn, fmtSec } from '../lib';
 import { TERMINAL, type Job } from '../types';
 
@@ -43,7 +44,7 @@ export function StageTimings({ job }: { job: Job }) {
                 {t.run > 1 && ` · run ${t.run}`}
               </span>
               <span className="ml-auto tabular-nums text-white/50">{fmtSec(t.durationMs)}</span>
-              {t.error && <span className="w-full truncate pl-[4.5rem] text-white/40" title={t.error}>{t.error}</span>}
+              {t.error && <span className="w-full truncate pl-[4.5rem] text-white/40">{sanitizeError(t.error)}</span>}
             </li>
           ))}
         </ol>

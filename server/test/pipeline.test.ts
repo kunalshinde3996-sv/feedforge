@@ -124,3 +124,18 @@ describe('pipeline', () => {
     expect(job.error?.code).toBe('SAFETY_BLOCKED');
   });
 });
+
+describe('pipeline records the serving model', () => {
+  it('stores the primary model per stage', async () => {
+    const job = await run(new MockLLM({ script: [validPlan()], critic: [review(GOOD)] }));
+    expect(job.attempts[0]!.script.servedBy).toEqual({ model: 'mock-model', fallback: false });
+    expect(job.attempts[0]!.review!.servedBy).toEqual({ model: 'mock-model', fallback: false });
+  });
+
+  it('stores the fallback model when it served the stage', async () => {
+    const job = await run(new MockLLM({ script: [validPlan()], critic: [review(GOOD)] }, 'mock-lite'));
+    expect(job.status).toBe('passed');
+    expect(job.attempts[0]!.script.servedBy).toEqual({ model: 'mock-lite', fallback: true });
+    expect(job.attempts[0]!.review!.servedBy).toEqual({ model: 'mock-lite', fallback: true });
+  });
+});

@@ -1,7 +1,7 @@
 import type { ApiError } from '../api';
 import { cn, fmtScore, timeAgo } from '../lib';
 import { MAX_ATTEMPTS, type JobSummary } from '../types';
-import { StatusBadge } from './StatusBadge';
+import { SampleBadge, StatusBadge } from './StatusBadge';
 
 type Props = {
   jobs: JobSummary[] | null;
@@ -62,7 +62,8 @@ export function JobList({ jobs, error, selectedId, onSelect, onRetry }: Props) {
                     <span className="line-clamp-2 text-sm font-medium text-white/90">{j.topic}</span>
                     <StatusBadge status={j.status} />
                   </div>
-                  <div className="mt-1 flex flex-wrap gap-x-3 text-xs text-white/45">
+                  <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-white/45">
+                    {j.sample && <SampleBadge />}
                     <span>{timeAgo(j.createdAt)}</span>
                     {active && <span>{STAGE_LABEL[j.currentStage]}</span>}
                     {j.attempts > 0 && (

@@ -9,6 +9,21 @@ const STYLES: Record<JobStatus, { label: string; icon: string; cls: string }> = 
   failed: { label: 'Failed', icon: '✕', cls: 'border-red-400/40 bg-red-400/10 text-red-300' },
 };
 
+/** Marks pre-generated real runs loaded from /examples, so it's clear they weren't created live. */
+export function SampleBadge({ className }: { className?: string }) {
+  return (
+    <span
+      title="A real pipeline run generated earlier and pre-loaded so the dashboard is never empty"
+      className={cn(
+        'inline-flex shrink-0 items-center gap-1 rounded-full border border-dashed border-white/25 px-2 py-0.5 text-[11px] font-medium text-white/65',
+        className,
+      )}
+    >
+      <span aria-hidden>◆</span> Sample run
+    </span>
+  );
+}
+
 export function StatusBadge({ status, className }: { status: JobStatus; className?: string }) {
   const s = STYLES[status];
   return (

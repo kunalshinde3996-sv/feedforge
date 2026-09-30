@@ -32,7 +32,7 @@ export class Pipeline {
       createdAt: ts,
       updatedAt: ts,
       input: { topic },
-      llm: { provider: this.deps.llm.name, model: this.deps.llm.model },
+      llm: { provider: this.deps.llm.name, model: this.deps.llm.model, fallbackModel: this.deps.llm.fallbackModel ?? null },
       status: 'queued',
       currentStage: 'script',
       attempts: [],
@@ -83,7 +83,7 @@ export class Pipeline {
     const startedAt = now();
     const t0 = performance.now();
     try {
-      const { plan, repairs } = await runScriptEngine(this.deps.llm, { topic: job.input.topic, previous });
+      const { plan, repairs, servedBy } = await runScriptEngine(this.deps.llm, { topic: job.input.topic, previous });
       const durationMs = Math.round(performance.now() - t0);
       const finishedAt = now();
       await this.save(job.id, (j) => {
@@ -91,14 +91,19 @@ export class Pipeline {
           n: attemptN,
           rewrittenFrom: previous?.attempt ?? null,
           plan,
-          script: { startedAt, finishedAt, durationMs, repairs },
+          script: { startedAt, finishedAt, durationMs, repairs, servedBy },
           review: null,
           outcome: 'pending',
         });
         j.timings.push(timing('script', attemptN, ctx.run, startedAt, finishedAt, durationMs, 'ok'));
         j.currentStage = 'quality_gate';
       });
-      this.log('script', job.id, attemptN, ctx, durationMs, 'ok', { repairs, rewrittenFrom: previous?.attempt ?? null });
+      this.log('script', job.id, attemptN, ctx, durationMs, 'ok', {
+        repairs,
+        rewrittenFrom: previous?.attempt ?? null,
+        model: servedBy.model,
+        fallback: servedBy.fallback,
+      });
       return { jobId: job.id, stage: 'quality_gate' };
     } catch (err) {
       await this.recordStageError(job.id, 'script', attemptN, ctx, startedAt, t0, err);
@@ -115,14 +120,14 @@ export class Pipeline {
     const startedAt = now();
     const t0 = performance.now();
     try {
-      const { review, repairs } = await runQualityGate(this.deps.llm, attempt.plan);
+      const { review, repairs, servedBy } = await runQualityGate(this.deps.llm, attempt.plan);
       const durationMs = Math.round(performance.now() - t0);
       const finishedAt = now();
       const decision = decide(review, attempt.n);
 
       await this.save(job.id, (j) => {
         const a = j.attempts.at(-1)!;
-        a.review = { ...review, startedAt, finishedAt, durationMs, repairs };
+        a.review = { ...review, startedAt, finishedAt, durationMs, repairs, servedBy };
         j.timings.push(timing('quality_gate', a.n, ctx.run, startedAt, finishedAt, durationMs, 'ok'));
 
         switch (decision.kind) {
@@ -159,6 +164,8 @@ export class Pipeline {
         overall: review.overall,
         safety: review.scores.safety,
         repairs,
+        model: servedBy.model,
+        fallback: servedBy.fallback,
       });
       return decision.kind === 'rewrite' ? { jobId: job.id, stage: 'script' } : null;
     } catch (err) {
