@@ -1,3 +1,6 @@
+import { existsSync } from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { config } from './config.js';
 import { createApp } from './app.js';
 import { JobEvents } from './lib/events.js';
@@ -27,18 +30,35 @@ if (pipeline) {
   if (recovered) logger.warn('marked interrupted jobs as failed', { count: recovered });
 }
 
+// Built dashboard: <repo>/web/dist (same relative location from src/ and dist/).
+const webDist = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../web/dist');
+const hasDashboard = existsSync(path.join(webDist, 'index.html'));
+
 const app = createApp({
   store,
   events,
   pipeline,
   rateLimit: { max: config.RATE_LIMIT_MAX, windowMs: config.RATE_LIMIT_WINDOW_MS },
+  webDist: hasDashboard ? webDist : null,
 });
 
-app.listen(config.PORT, () => {
+const server = app.listen(config.PORT, () => {
   logger.info('server started', {
     port: config.PORT,
     env: config.NODE_ENV,
     llmProvider: config.LLM_PROVIDER,
     llmModel: config.LLM_MODEL ?? '(not set)',
+    dashboard: hasDashboard ? webDist : '(not built — API only)',
+    dataDir: config.DATA_DIR,
   });
 });
+
+// Render sends SIGTERM on deploy/restart. Stop accepting connections; open SSE streams are cut.
+for (const signal of ['SIGTERM', 'SIGINT'] as const) {
+  process.on(signal, () => {
+    logger.info('shutting down', { signal });
+    server.close(() => process.exit(0));
+    server.closeAllConnections();
+    setTimeout(() => process.exit(0), 5000).unref();
+  });
+}

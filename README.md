@@ -4,7 +4,7 @@
 
 Built for **Qoneqt × CTRL FREAK 2026** by **Team Dravex — MIT ADT University**.
 
-> 🚧 README skeleton. Sections marked _TODO_ are filled in as milestones land.
+> **Phase 1 (this repo):** topic → Script Engine → Quality Gate, with a live dashboard, deployed as one Docker service. See [Deploy](#deploy-render) and the [Phase 2 roadmap](#phase-1-vs-phase-2).
 
 ## Problem
 
@@ -74,10 +74,15 @@ A single page (React + Tailwind) that streams every stage live over Server-Sent 
 
 | | Phase 1 (this build) | Phase 2 (roadmap) |
 |---|---|---|
-| Input | ✅ topic → job | batch mode |
-| Script Engine | ✅ | |
-| Quality Gate | ✅ | |
-| Assets / Compose / Publish | — | stock/AI visuals, TTS, FFmpeg composer, publish pack |
+| Input | ✅ topic → job | Batch mode (a list of topics/trends → many jobs) |
+| Script Engine | ✅ 3 hooks → chosen hook → scene plan, Zod-validated | |
+| Quality Gate | ✅ Critic scores, rules in code, rewrite loop, safety rejection | |
+| Asset Engine | — | Stock clips per `visualQuery`, TTS voiceover per scene |
+| Composer | — | FFmpeg: 9:16 clips + voiceover + burned-in `onScreenText` → MP4 |
+| Publish Pack | — | MP4 + title/description/hashtags + thumbnail, ready for the Global Feed |
+| Dashboard | ✅ Live SSE stages, Quality Gate panel | Assets/Compose/Publish stages light up; video preview |
+| Queue / storage | In-process queue, JSON files | BullMQ + Redis, Postgres, Cloudflare R2 |
+| Deploy | ✅ One Docker service on Render | Separate API and worker services |
 
 ## JSON contract
 
@@ -156,9 +161,52 @@ npm test                  # Vitest, mocked LLM (no API calls)
 npm run examples -w server   # with the server running: runs 2 real topics → examples/*.json
 ```
 
-## Deploy
+### Production build (same as the container)
 
-_TODO (M4)_
+```bash
+npm run build             # web → web/dist, server → server/dist
+npm start                 # Express serves the API and the dashboard on http://localhost:8080
+```
+
+### Docker
+
+```bash
+docker build -t feedforge .
+docker run -p 8080:8080 --env-file .env feedforge   # → http://localhost:8080
+```
+
+This is a multi-stage build on `node:24-alpine`. The runtime image contains only the server's production dependencies, the compiled server and the built dashboard. It runs as the non-root `node` user. Express serves `web/dist`: hashed assets are cached for 1 year (`immutable`), `index.html` is `no-cache`, and any other GET falls back to the SPA. `/api/*` always returns JSON.
+
+## Deploy (Render)
+
+FeedForge deploys as **one Docker web service**. [`render.yaml`](render.yaml) is a Render Blueprint.
+
+1. Push this repo to GitHub.
+2. In the Render dashboard, choose **New → Blueprint** and select the repo. Render reads `render.yaml`.
+3. When prompted, paste your **`GEMINI_API_KEY`**. It is declared `sync: false`, so it lives only in Render and never in git.
+4. Click **Apply**. Render builds the Dockerfile and deploys it to `https://feedforge-<suffix>.onrender.com` (the exact URL is shown in the dashboard).
+5. Verify:
+   - `https://<your-service>.onrender.com/api/health` → `{"status":"ok", ... "model":"gemini-3.5-flash"}`
+   - Open the root URL, click an example chip, and watch the stages stream in live.
+
+The Blueprint config:
+
+| Setting | Value |
+|---|---|
+| `runtime` | `docker` (builds `./Dockerfile`) |
+| `plan` | `free` |
+| `region` | `singapore`, closest to Qoneqt's audience in India |
+| `healthCheckPath` | `/api/health` |
+| `autoDeployTrigger` | `commit`: every push to the linked branch redeploys |
+| Environment | `LLM_PROVIDER=gemini`, `LLM_MODEL=gemini-3.5-flash`, rate limit 10 jobs/min/IP. The key is set in the dashboard |
+
+**Render free-plan behavior (plan the demo around it):**
+- The service **spins down after 15 minutes without traffic**, and the next request takes about **1 minute** to wake it. Open the URL a few minutes before presenting.
+- The filesystem is **ephemeral**: job history in `./data` is **wiped on every redeploy or restart**. Free services cannot attach a persistent disk. The Phase 2 answer is Postgres.
+- SSE works through Render's proxy. The server sends a heartbeat every 15s to keep streams open.
+- On deploy, Render sends `SIGTERM`. The server stops cleanly, and any job that was mid-flight is marked `failed` (`INTERRUPTED`) on the next boot.
+
+**Gemini free-tier quota.** A free-tier key has a **daily request cap per model**. At the time of writing, this project's key was capped at 20 requests/day for `gemini-3.5-flash`. One job uses 2 calls if it passes first time, and up to about 6 with rewrites. When the cap is hit, jobs fail immediately with `LLM_QUOTA_EXHAUSTED` instead of retrying. Check usage at https://ai.dev/rate-limit, and enable billing on the Google AI project before a live demo.
 
 ## Environment variables
 
@@ -174,8 +222,11 @@ _TODO (M4)_
 
 ## Known simplifications (Phase 1)
 
-- An in-process job queue sits behind a `JobQueue` interface. BullMQ + Redis is planned.
-- Jobs are stored as JSON files behind a `JobStore` interface. Postgres is planned, with Cloudflare R2 for media.
+- An **in-process job queue** sits behind a `JobQueue` interface. Jobs in flight are lost on restart and marked `INTERRUPTED`. Planned: **BullMQ + Redis**, with one queue per stage and the same handler signature and retry policy.
+- Jobs are stored as **JSON files** behind a `JobStore` interface, and are ephemeral on Render's free plan. Planned: **Postgres** for jobs, and **Cloudflare R2** for Phase 2 media (voiceover audio, clips, rendered MP4s).
+- **Single instance.** SSE fan-out and the rate limiter are in-memory. Planned: Redis pub/sub and a shared rate-limit store to scale horizontally.
+- **No auth.** The API is open, protected only by the per-IP rate limit.
+- **One real LLM provider (Gemini).** Anthropic and OpenAI are interface stubs.
 
 ## Team
 

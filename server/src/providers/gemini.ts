@@ -55,9 +55,13 @@ export class GeminiProvider implements LLMProvider {
   }
 }
 
-function classify(err: unknown, model: string): Error {
+export function classify(err: unknown, model: string): Error {
   if (err instanceof ApiError) {
     const s = err.status;
+    // A daily quota won't recover within the retry window — fail fast with a clear code.
+    if (s === 429 && /PerDay/i.test(err.message)) {
+      return new LLMFatalError(`Gemini daily quota exhausted for "${model}": ${short(apiMessage(err))}`, 'LLM_QUOTA_EXHAUSTED');
+    }
     if (s === 429 || s >= 500) return new LLMTransientError(`Gemini API ${s}: ${short(apiMessage(err))}`);
     if (s === 404) {
       return new LLMFatalError(`Gemini model "${model}" is not available (404): ${short(apiMessage(err))}`, 'LLM_MODEL_NOT_FOUND');
