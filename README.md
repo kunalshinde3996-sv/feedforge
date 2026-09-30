@@ -54,6 +54,22 @@ POST /api/jobs ─► Pipeline.submit ─► JobStore.create ─► JobQueue.enq
 
 Each stage is a separate queue task that returns the next task. Phase 2 stages (`assets`, `compose`, `publish`) chain on after `passed` without changing the Phase 1 flow. `JobQueue` maps 1:1 onto BullMQ (retry policy → `attempts` + exponential `backoff`).
 
+## Dashboard
+
+A single page (React + Tailwind) that streams every stage live over Server-Sent Events:
+
+- **Topic input**, with 3 example chips that start a job in one click.
+- **Pipeline stepper:** Input → Script → Quality Gate run live, including the rewrite loop ("Rewrite · 2/3"). Assets, Compose and Publish are shown greyed out as Phase 2. A live line narrates the current step with an elapsed timer and shows provider retries.
+- **Job list** with live status badges. The selected job is patched from its SSE stream, and the list polls only while a job is in flight.
+- **Quality Gate panel:**
+  - Every attempt appears as a card with hook/clarity/pacing/safety score bars (the safety bar has a threshold tick at 8), the overall score, and the critic's feedback.
+  - Each card has a verdict **in words**: PASSED / FAILED: overall below 7 / REJECTED: safety below 8. Rewrites are labeled "Rewritten from attempt N".
+  - A verdict box checks both rules, and shows rewrites used and the overall-score trend (e.g. `6.25 → 7 → 8.5`).
+- **Plan:** a large hook with the 3 drafted options (the chosen one is marked), a scene table, title, description and hashtags. A plan that never passed the gate is clearly labeled as a draft.
+- **Stage timings:** per-stage totals, end-to-end time, and every run including retries and errors.
+- **Download JSON** exports the full job.
+- **States:** loading, empty and error states are handled. The layout is responsive down to 390px, and the selected job is kept in the URL (`#/jobs/<id>`).
+
 ## Phase 1 vs Phase 2
 
 | | Phase 1 (this build) | Phase 2 (roadmap) |
